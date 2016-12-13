@@ -50,10 +50,25 @@ usage $#
 # generate cscope.files containing absolute paths
 report_step "1" "Generating cscope.files"
 cd /
-find $LNX/arch/x86 -name "*.[chxsS]" -print >$LNX/cscope.files
-find $LNX -path "$LNX/arch/*" -prune -o -path "$LNX/tmp*" -prune -o \
-    -path "$LNX/Documentation*" -prune -o -path "$LNX/scripts*" -prune -o \
-    -name "*.[chxsS]" -print >>$LNX/cscope.files
+find $LNX \
+    -path "$LNX/arch*"               -prune -o    \
+    -path "$LNX/tmp*"                -prune -o    \
+    -path "$LNX/Documentation*"      -prune -o    \
+    -path "$LNX/scripts*"            -prune -o    \
+    -path "$LNX/tools*"              -prune -o    \
+    -path "$LNX/include/config*"     -prune -o    \
+    -path "$LNX/usr/include*"        -prune -o    \
+    -type f                                       \
+    -not -name '*.mod.c'                          \
+    -name "*.[chsS]" -print > $LNX/cscope.files
+find $LNX/arch/x86                                 \
+    -path "$LNX/arch/x86/configs"    -prune -o    \
+    -path "$LNX/arch/x86/kvm"        -prune -o    \
+    -path "$LNX/arch/x86/lguest"     -prune -o    \
+    -path "$LNX/arch/x86/xen"        -prune -o    \
+    -type f                                       \
+    -not -name '*.mod.c'                          \
+    -name "*.[chsS]" -print >> $LNX/cscope.files
 
 # generate scope db, -q for additonal index (speeds up searching for large projects), -k for kernel mode (excludes code from /usr/include that is included in our kernel sources already)
 report_step "2" "Generating cscope database"
