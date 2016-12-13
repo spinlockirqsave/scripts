@@ -1,11 +1,11 @@
 #!/bin/sh
 
 
-# file		generate_cscope_db.sh
-# author	Piotr Gregor
-# purpose	Generate cscope database from kernel sources dor x86 arch.
+# file      generate_cscope_db.sh
+# author    Piotr Gregor
+# purpose   Generate cscope database from kernel sources dor x86 arch.
 # details   Skip other architectures.
-# date		13/12/2016 14:22
+# date      13/12/2016 14:22
 
 
 # fail the whole script on first error
@@ -55,7 +55,7 @@ find $LNX -path "$LNX/arch/*" -prune -o -path "$LNX/tmp*" -prune -o \
     -path "$LNX/Documentation*" -prune -o -path "$LNX/scripts*" -prune -o \
     -name "*.[chxsS]" -print >>$LNX/cscope.files
 
-# generate scope db, -q for additonal index (speeds up searching for large projects), -k for kernel mode (excludes code from /usr/include that is included in our kernel sources already 
+# generate scope db, -q for additonal index (speeds up searching for large projects), -k for kernel mode (excludes code from /usr/include that is included in our kernel sources already)
 report_step "2" "Generating cscope database"
 cd $LNX
 cscope -b -q -k
