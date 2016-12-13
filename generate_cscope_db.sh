@@ -5,6 +5,7 @@
 # author    Piotr Gregor
 # purpose   Generate cscope database from kernel sources dor x86 arch.
 # details   Skip other architectures.
+#           Use 'set tags=' and 'cs add' in vim for out of tree modules.
 # date      13/12/2016 14:22
 
 
@@ -74,3 +75,6 @@ find $LNX/arch/x86                                 \
 report_step "2" "Generating cscope database"
 cd $LNX
 cscope -b -q -k
+
+report_step "3" "Generating ctags reusing cscope.files"
+ctags -L cscope.files
