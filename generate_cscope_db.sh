@@ -6,6 +6,10 @@
 # purpose   Generate cscope database from kernel sources dor x86 arch.
 # details   Skip other architectures.
 #           Use 'set tags=' and 'cs add' in vim for out of tree modules.
+#			Cscope build may fail if there is not nough space in /tmp
+#			where it creates temporary files - in that case exporting
+#			TMPDIR set to volume containing enough space is sa fix.
+#			Use --t option to point to a right place.
 # date      13/12/2016 14:22
 
 
@@ -39,7 +43,7 @@ while getopts "f:t:" opt; do
 	t)
 		TMPDIR=$OPTARG
 		export TMPDIR
-		echo "directory for intermeduate results [$TMPDIR]" ;;
+		echo "directory for intermediate results [$TMPDIR]" ;;
 	\?)
 		echo "Invalid option: -$OPTARG." >&2
 		usage $#
