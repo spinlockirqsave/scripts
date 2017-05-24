@@ -87,4 +87,4 @@ cd $LNX
 cscope -b -q -k
 
 report_step "3" "Generating ctags reusing cscope.files"
-ctags -L cscope.files
+ctags -L cscope.files --exclude='*.js'
