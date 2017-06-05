@@ -1,3 +1,4 @@
 git format-patch -o . HEAD^
 sud/scripts/checkpatch.pl --patch 0001-PCI-Move-test-of-INTx-masking-to-pci_setup_device.patch
 ./scripts/get_maintainer.pl 0001-PCI-Move-test-of-INTx-masking-to-pci_setup_device.patch
+mutt -H 0001-PCI-Move-test-of-INTx-masking-to-pci_setup_device.patch
