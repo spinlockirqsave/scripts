@@ -165,9 +165,10 @@ put "4.1" "kernel_folder" "v4.x"
 put "4.1" "patch" "patch-4.1.35-rt41.patch"
 # changed from 4.4.32 to 4.4.38
 # changed from 4.4.38 to 4.4.39
-put "4.4" "kernel" "linux-4.4.39"
+# changed from 4.4.39 to 4.4.70
+put "4.4" "kernel" "linux-4.4.70"
 put "4.4" "kernel_folder" "v4.x"
-put "4.4" "patch" "patch-4.4.39-rt50.patch"
+put "4.4" "patch" "patch-4.4.70-rt83.patch"
 put "4.6" "kernel" "linux-4.6.7"
 put "4.6" "kernel_folder" "v4.x"
 put "4.6" "patch" "patch-4.6.7-rt14.patch"
@@ -242,7 +243,7 @@ user_ask_exec "Is this what you want to do (yes-continue, no-abort)?" "return 0"
 report_step 3 "Downloading sources (kernel + rt patch)..."
 if [ ! -d "$kernel" ]; then
 	if [ ! -f "$kernel.gz" ]; then
-		wget ftp://ftp.kernel.org/pub/linux/kernel/$kernel_folder/$kernel.tar.gz
+		wget http://kernel.org/pub/linux/kernel/$kernel_folder/$kernel.tar.gz
 	fi
 	# unpack kernel
 	report_step 3.1 "Unpacking sources (kernel)..."
