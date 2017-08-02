@@ -11,8 +11,8 @@
 #				Displays information about next steps.
 #			2.	"System detection"
 #				Checks the operating system version.
-#			3.	"Download"
-#				Downloads and unpacks the kernel and corresponding RT patch.
+#			3.	"Kernel sources and patch file"
+#				Points script to predownloaded kernel and patch or downloads and unpacks the kernel and corresponding RT patch.
 #				It is possible to install default kernel linux-4.4.70 and patch it using patch-4.4.70-rt83.patch - internet connection is not needed if kernel and patch (extracted or packed) are present in installation folder.
 #			4.	"Patching the kernel"
 #				Patches the kernel.
@@ -44,7 +44,9 @@
 #				Make modules_install (copy modules to /lib/modules).
 #			12.	"Kernel installation"
 #				Make install (installation, sources arch/$ARCH/boot/install.sh, copy vmlinuz to /boot, build initial root ram disk file system initramfs, build grub configuration file)
-#			13. Reboot?
+#			13. Updating /etc/default/grub
+#				Add options to kernel's boot commandline: splash nomodesetting=1 loglevel=2 blacklist=pcspkr pci=noaer
+#			14. Reboot?
 # date		4/11/2016 13:19
 
 # first, some utility functions
@@ -155,7 +157,7 @@ enable_pcie215 () {
 mapdir=$(mktemp -dt map.XXX)
 
 cleanup () {
-	rmdir $mapdir
+	rm -rf $mapdir
 }
 
 put() {
@@ -178,8 +180,8 @@ echo "\t1: Preparing to install"
 echo "\t\tThis step."
 echo "\t2: System detection"
 echo "\t\tChecks the operating system version."
-echo "\t3: Download"
-echo "\t\tDownloads and unpacks the kernel and corresponding RT patch."
+echo "\t3: Kernel sources and patch file"
+echo "\t\tPoints script to the predownloaded kernel and patch or downloads and unpacks the kernel and corresponding RT patch."
 echo "\t\tIt is possible to install default kernel linux-4.4.70 and patch it using patch-4.4.70-rt83.patch."
 echo "\t\tInternet connection is not needed if kernel and patch (extracted or packed) are present in installation folder."
 echo "\t4: Patching the kernel"
@@ -212,7 +214,9 @@ echo "\t11: Modules installation"
 echo "\t\tMake modules_install (copy modules to /lib/modules)."
 echo "\t12: Kernel installation"
 echo "\t\tMake install (source arch/$ARCH/boot/install.sh, copy vmlinuz to /boot, initial root ram disk file system initramfs, grub config)."
-echo "\t13: Optional reboot"
+echo "\t13. Updating /etc/default/grub"
+echo "\t\tAdd options to kernel's boot commandline: splash nomodesetting=1 loglevel=2 blacklist=pcspkr pci=noaer"
+echo "\t14: Optional reboot"
 
 put "3.0" "kernel" "linux-3.0.101"
 put "3.0" "kernel_folder" "v3.0"
@@ -297,7 +301,7 @@ fi;
 user_ask_exec "Is this information correct?" "return 0" "exit 1"
 
 # get sources (kernel + rt patch)
-report_step 3 "Download"
+report_step 3 "Kernel sources and patch file"
 major=
 kernel=
 patch=
@@ -321,7 +325,7 @@ use_default_kernel () {
 
 	if [ ! -f "$patch" ]; then
 		if [ ! -f "$patch.gz" ]; then
-			echo "\tNo archive found in this folder to unpack the patch"
+			echo "\tNo archive found in this folder to unpack the patch."
 			user_ask_exec "Download default patch now?" "wget kernel.org/pub/linux/kernel/projects/rt/$major/older/$patch.gz" "exit"
 		fi
 		echo "\tUnpacking patch..."
@@ -381,11 +385,11 @@ use_downloaded_kernel () {
 	fi
 }
 
-user_ask_exec "Use default kernel (predownloaded linux-4.4.70) and optionally patch it (with patch-4.4.70-rt83.patch)?" "use_default_kernel" "use_downloaded_kernel"
+user_ask_exec "Use default kernel (linux-4.4.70: download or use predownloaded tar.gz or extracted folder) and optionally patch it (with patch-4.4.70-rt83.patch)?" "use_default_kernel" "use_downloaded_kernel"
+eval $(echo cd $kernel)
 
 # patch the kernel
 report_step 4 "Patching the kernel..."
-eval $(echo cd $kernel)
 user_ask_exec "Apply the patch?" "patch -p1 < ../$patch" "return 0"
 
 # install the dependencies (curses, build-essential for menuconfig utility and ssl for kernel build)
@@ -443,26 +447,31 @@ echo "\tFound $cpus CPUs and $cores cores\n"
 # compile new kernel with rt support
 report_step 9 "Kernel compilation"
 echo "\tCompiling new  $major kernel with rt support.\n\t[vmlinuz] (make -j$cores)...\n\t[bzImage] (make -j$cores)..."
-user_continue
-make -j$cores
+user_ask_exec "Build?" "make -j$cores" "return 0"
 
 report_step 10 "Modules compilation"
 echo "\tCompiling kernel modules (make modules -j$cores)..."
-user_continue
-sudo make modules -j$cores
+user_ask_exec "Build?" "sudo make modules -j$cores" "return 0"
 
 report_step 11 "Modules installation"
 echo "\tInstalling kernel modules\n\t[/lib/modules] (make modules_install -j$cores)..."
-user_continue
-sudo make modules_install -j$cores
+user_ask_exec "Build?" "sudo make modules_install -j$cores" "return 0"
 
 report_step 12 "Kernel installation"
 echo "\tInstalling the kernel\n\t[/boot/vmlinuz] (make install -j$cores)..."
-user_continue
-sudo make install -j$cores
+user_ask_exec "Build?" "sudo make install -j$cores" "return 0"
+
+update_grub () {
+	sudo sed -i '/GRUB_CMDLINE_LINUX_DEFAULT=/d' /etc/default/grub
+	sudo bash -c "echo \"GRUB_CMDLINE_LINUX_DEFAULT='quiet splash nomodesetting=1 loglevel=2 blacklist=pcspkr pci=noaer'\" >> /etc/default/grub"
+	sudo update-grub
+}
+
+report_step 13 "Updating /etc/default/grub"
+user_ask_exec "Update grub commandline?" "update_grub" "return 0"
 
 # OK, ask whether to reboot
-report_step 13 "Done ($major)"
+report_step 14 "Done ($major)"
 echo "\tDone.\n\tYou can boot your new kernel."
 sync	
 user_ask_exec "Reboot now?" "sudo reboot" "return 0"
