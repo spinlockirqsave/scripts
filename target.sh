@@ -39,27 +39,32 @@ usage () {
 hostip=
 module=
 path=
-result_file="/home/qsl/dbg.ksyms"
-while getopts "i:m:p:f:" opt; do
+result_dir="/home/peter/kernel/nonrt/linux-4.4.70"
+result_file="dbg.ksyms"
+kernel_obj="/home/peter/kernel/nonrt/linux-4.4.70/vmlinux"
+while getopts "i:m:p:f:k:" opt; do
 	case $opt in
 	i)
 		hostip=$OPTARG
-		echo "hostip [$hostip]" ;;
+		echo "SET hostip [$hostip]" ;;
 	m)
 		module=$OPTARG
-		echo "kernel module [$module]" ;;
+		echo "SET kernel module [$module]" ;;
 	p)
 		path=$OPTARG
-		echo "path to kernel module [$path]" ;;
+		echo "SET path to kernel module [$path]" ;;
 	f)
 		result_file=$OPTARG
-		echo "file (host) [$result_file]" ;;
+		echo "SET file (host) [$result_file]" ;;
+	k)
+		kernel_obj=$OPTARG
+		echo "SET kernel (host) [$kernel_obj]" ;;
 	\?)
-		echo "Invalid option: -$OPTARG." >&2
+		echo "SET Invalid option: -$OPTARG." >&2
 		usage $#
 		exit 1 ;;
 	:)
-		echo "Option: -$OPTARG requires argument." >&2
+		echo "SET Option: -$OPTARG requires argument." >&2
 		usage $#
 		exit 1 ;;
 	esac
@@ -67,13 +72,19 @@ done
 # call usage with the number of arguments passed to this script
 usage $#
 if [ -z "$module" ]; then # if $module is of 0 length (doesn't matter if it is uninitialized or set to zero length string)
-    module="pcihsd"
+    module="pcie215"
     echo "kernel module [$module] (default)"
 fi
 if [ -z "$path" ]; then # if $path is of 0 length (doesn't matter if it is uninitialized or set to zero length string)
-    path="/home/qsl/Installer/pcihsd"
+    path="/home/peter/kernel/nonrt/linux-4.4.70/drivers/staging/pcie215"
     echo "absolute path to kernel module [$path] (default)"
 fi
+
+echo "USING hostip [$hostip]"
+echo "USING kernel module [$module]"
+echo "USING path to kernel module [$path]"
+echo "USING file (host) [$result_file]"
+echo "USING kernel (host) [$kernel_obj]"
 
 # unmount if mounted
 report_step "1" "Getting symbols from [$module/sections] at [/sys/module]"
@@ -96,4 +107,7 @@ report_step "2" "Result command"
 echo [$cmd]
 
 report_step "3" "Opening ssh connection to [$hostip], saving result in [$result_file]"
-ssh -v qsl@$hostip "echo $cmd > $result_file"
+ssh -v peter@$hostip "echo $cmd > $result_dir/$result_file"
+
+report_step "4" "Transfering kernel from [$kernel_obj] to [$result_dir/vmlinux]"
+scp $kernel_obj peter@"$hostip"://"$result_dir"/vmlinux
