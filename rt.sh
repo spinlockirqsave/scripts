@@ -326,10 +326,12 @@ use_default_kernel () {
 	if [ ! -f "$patch" ]; then
 		if [ ! -f "$patch.gz" ]; then
 			echo "\tNo archive found in this folder to unpack the patch."
-			user_ask_exec "Download default patch now?" "wget kernel.org/pub/linux/kernel/projects/rt/$major/older/$patch.gz" "exit"
+			user_ask_exec "Download default patch now?" "wget kernel.org/pub/linux/kernel/projects/rt/$major/older/$patch.gz" "return 0"
 		fi
-		echo "\tUnpacking patch..."
-		gunzip $patch.gz
+		if [ -f "$patch.gz" ]; then
+			echo "\tUnpacking patch..."
+			gunzip $patch.gz
+		fi
 	else
 		echo "\tUsing old patch file..."
 	fi
@@ -365,20 +367,12 @@ use_downloaded_kernel () {
 
 	if [ ! -f "$patch" ]; then
 		if [ ! -f "$patch.gz" ]; then
-			echo "\tDownloading rt-patch..."
-			if [ "$NAME" = "Ubuntu" ]; then
-				wget kernel.org/pub/linux/kernel/projects/rt/$major/older/$patch.gz
-			else
-				wget kernel.org/pub/linux/kernel/projects/rt/$major/older/$patch.gz
-			fi
-		else
-			echo "\tUsing old patch archive..."
+			echo "\tNo archive found in this folder to unpack the patch."
+			user_ask_exec "Download rt patch now?" "wget kernel.org/pub/linux/kernel/projects/rt/$major/older/$patch.gz" "return 0"
 		fi
-		# unpack patch
-		gunzip $patch.gz
-		if [ ! -f "$patch" ]; then
-			echo "RT patch files missing, aborting..."
-			exit 1
+		if [ -f "$patch.gz" ]; then
+			echo "\tUnpacking patch..."
+			gunzip $patch.gz
 		fi
 	else
 		echo "\tUsing old patch file..."
@@ -389,8 +383,10 @@ user_ask_exec "Use default kernel (linux-4.4.70: download or use predownloaded t
 eval $(echo cd $kernel)
 
 # patch the kernel
-report_step 4 "Patching the kernel..."
-user_ask_exec "Apply the patch?" "patch -p1 < ../$patch" "return 0"
+if [ -f "../$patch" ]; then
+	report_step 4 "Patching the kernel..."
+	user_ask_exec "Apply the patch?" "patch -p1 < ../$patch" "return 0"
+fi
 
 # install the dependencies (curses, build-essential for menuconfig utility and ssl for kernel build)
 report_step 5 "Installing dependencies..."
@@ -409,7 +405,7 @@ user_ask_exec "Would you like to run 'make oldconfig' (create new configuration 
 report_step 6.3 "Optional: Copy existing configuration"
 user_ask_exec "Would you like to copy existing kernel config and build rt-kernel based on that? You will be asked about options which have no match in current config." "cp /boot/config-`uname -r` .config; make oldconfig" "return 0"
 
-report_step 6.4 "Adjusting configuration (expert adjustments)"
+report_step 6.4 "Adjusting kernel configuration (make expert adjustments)"
 echo "\tThe configuration menu will now be displayed for making expert adjustments."
 echo "\tIf you are building RT kernel it is advised to set following options:"
 echo "\t\t1. Preemption model -> Fully preemptible (RT)"
@@ -432,6 +428,7 @@ rt_full_opt=`echo -n $rt_full | tail -c 1`
 if [ "$rt_full_opt" != "y" ]
 then
 	echo "WARNING, RT preemption has not been enabled, the option in kernel config is set to [$rt_full]"
+	echo "It is OK if you are not building RT kernel."
 	user_continue
 else
 	echo "\tOK"
@@ -446,7 +443,7 @@ echo "\tFound $cpus CPUs and $cores cores\n"
 
 # compile new kernel with rt support
 report_step 9 "Kernel compilation"
-echo "\tCompiling new  $major kernel with rt support.\n\t[vmlinuz] (make -j$cores)...\n\t[bzImage] (make -j$cores)..."
+echo "\tCompiling new  $major kernel.\n\t[vmlinuz] (make -j$cores)...\n\t[bzImage] (make -j$cores)..."
 user_ask_exec "Build?" "make -j$cores" "return 0"
 
 report_step 10 "Modules compilation"
