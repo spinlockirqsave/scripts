@@ -30,8 +30,10 @@ usage () {
 		echo "Usage:\n\t./`basename "$0"` <-i IP> [-m module] [-p path] [-f file]."
 		echo "\t\t-i host IP where to send the result (mandatory)"
 		echo "\t\t-m kernel module name (optional: pcihsd is default)"
-		echo "\t\t-p absolute path to kernel module (optional, no slash at the end, /home/qsl/Installer/pcihsd)"
-		echo "\t\t-f absolute path on host where to save the result command (optional, /home/qsl/dbg.ksyms)"
+		echo "\t\t-p absolute path to kernel module (optional, no slash at the end, /home/peter/kernel/nonrt/linux-4.4.70)"
+		echo "\t\t-d absolute path on host where to save the result file (optional, /home/peter/kernel/nonrt/linux-4.4.70)"
+		echo "\t\t-f file name on host where to save the result command (under result dir) (optional, dbg.ksyms)"
+		echo "\t\t-k absolute path to the vmlinux on host (to be xferred to remote) (optional, /home/p/k/n/linux-4.4.70)"
 		exit 1
 	fi
 }
@@ -42,7 +44,7 @@ path=
 result_dir="/home/peter/kernel/nonrt/linux-4.4.70"
 result_file="dbg.ksyms"
 kernel_obj="/home/peter/kernel/nonrt/linux-4.4.70/vmlinux"
-while getopts "i:m:p:f:k:" opt; do
+while getopts "i:m:p:d:f:k:" opt; do
 	case $opt in
 	i)
 		hostip=$OPTARG
@@ -53,9 +55,12 @@ while getopts "i:m:p:f:k:" opt; do
 	p)
 		path=$OPTARG
 		echo "SET path to kernel module [$path]" ;;
+	d)
+		result_dir=$OPTARG
+		echo "SET result dir (host) [$result_dir]" ;;
 	f)
 		result_file=$OPTARG
-		echo "SET file (host) [$result_file]" ;;
+		echo "SET result file (host) [$result_file]" ;;
 	k)
 		kernel_obj=$OPTARG
 		echo "SET kernel (host) [$kernel_obj]" ;;
@@ -83,7 +88,8 @@ fi
 echo "USING hostip [$hostip]"
 echo "USING kernel module [$module]"
 echo "USING path to kernel module [$path]"
-echo "USING file (host) [$result_file]"
+echo "USING result dir (host) [$result_dir]"
+echo "USING result file (host) [$result_file]"
 echo "USING kernel (host) [$kernel_obj]"
 
 # unmount if mounted
