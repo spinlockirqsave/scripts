@@ -30,10 +30,11 @@ usage () {
 		echo "Usage:\n\t./`basename "$0"` <-i IP> [-m module] [-p path] [-f file]."
 		echo "\t\t-i host IP where to send the result (mandatory)"
 		echo "\t\t-m kernel module name (optional: pcihsd is default)"
-		echo "\t\t-p absolute path to kernel module (optional, no slash at the end, /home/peter/kernel/nonrt/linux-4.4.70)"
+		echo "\t\t-p absolute path to kernel module on target (optional, no slash at the end, /home/peter/kernel/nonrt/linux-4.4.70)"
 		echo "\t\t-d absolute path on host where to save the result file (optional, /home/peter/kernel/nonrt/linux-4.4.70)"
 		echo "\t\t-f file name on host where to save the result command (under result dir) (optional, dbg.ksyms)"
 		echo "\t\t-k absolute path to the vmlinux on host (to be xferred to remote) (optional, /home/p/k/n/linux-4.4.70)"
+		echo "\t\t-h absolute path to kernel module on host (optional, no slash at the end, /home/peter/kernel/nonrt/linux-4.4.70)"
 		exit 1
 	fi
 }
@@ -41,10 +42,11 @@ usage () {
 hostip=
 module=
 path=
+path_host=
 result_dir="/home/peter/kernel/nonrt/linux-4.4.70"
 result_file="dbg.ksyms"
 kernel_obj="/home/peter/kernel/nonrt/linux-4.4.70/vmlinux"
-while getopts "i:m:p:d:f:k:" opt; do
+while getopts "i:m:p:d:f:k:h:" opt; do
 	case $opt in
 	i)
 		hostip=$OPTARG
@@ -54,7 +56,7 @@ while getopts "i:m:p:d:f:k:" opt; do
 		echo "SET kernel module [$module]" ;;
 	p)
 		path=$OPTARG
-		echo "SET path to kernel module [$path]" ;;
+		echo "SET path to kernel module (target) [$path]" ;;
 	d)
 		result_dir=$OPTARG
 		echo "SET result dir (host) [$result_dir]" ;;
@@ -64,6 +66,9 @@ while getopts "i:m:p:d:f:k:" opt; do
 	k)
 		kernel_obj=$OPTARG
 		echo "SET kernel (host) [$kernel_obj]" ;;
+	h)
+		path_host=$OPTARG
+		echo "SET path to kernel module (host) [$path_host]" ;;
 	\?)
 		echo "SET Invalid option: -$OPTARG." >&2
 		usage $#
@@ -82,15 +87,20 @@ if [ -z "$module" ]; then # if $module is of 0 length (doesn't matter if it is u
 fi
 if [ -z "$path" ]; then # if $path is of 0 length (doesn't matter if it is uninitialized or set to zero length string)
     path="/home/peter/kernel/nonrt/linux-4.4.70/drivers/staging/pcie215"
-    echo "absolute path to kernel module [$path] (default)"
+    echo "absolute path to kernel module (target) [$path] (default)"
+fi
+if [ -z "$path_host" ]; then
+    path_host="$path"
+    echo "absolute path to kernel module (host) [$path_host] (default)"
 fi
 
 echo "USING hostip [$hostip]"
-echo "USING kernel module [$module]"
-echo "USING path to kernel module [$path]"
+echo "USING kernel module (target) [$module]"
+echo "USING path to kernel module (target) [$path]"
 echo "USING result dir (host) [$result_dir]"
 echo "USING result file (host) [$result_file]"
-echo "USING kernel (host) [$kernel_obj]"
+echo "USING kernel (target) [$kernel_obj]"
+echo "USING path to kernel module (host) [$path_host]"
 
 # unmount if mounted
 report_step "1" "Getting symbols from [$module/sections] at [/sys/module]"
@@ -116,4 +126,7 @@ report_step "3" "Opening ssh connection to [$hostip], saving result in [$result_
 ssh -v peter@$hostip "echo $cmd > $result_dir/$result_file"
 
 report_step "4" "Transfering kernel from [$kernel_obj] to [$result_dir/vmlinux]"
-scp $kernel_obj peter@"$hostip"://"$result_dir"/vmlinux
+scp $kernel_obj peter@"$hostip":"$result_dir"/vmlinux
+
+report_step "5" "Transfering module from [$path] to [$path_host]"
+scp -r $path peter@"$hostip":"$path_host/.."
